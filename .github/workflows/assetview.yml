@@ -1,0 +1,42 @@
+name: Asset view
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        required: true
+permissions:
+  contents: write
+jobs:
+  view:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Blender
+        run: |
+          curl -L -o blender.tar.xz "https://download.blender.org/release/Blender5.0/blender-5.0.1-linux-x64.tar.xz"
+          tar -xf blender.tar.xz
+          mv blender-5.0.1-linux-x64 blender
+          echo "$(pwd)/blender" >> "$GITHUB_PATH"
+      - name: Render
+        run: blender --background --python scripts/asset_view.py -- output 2>&1 | tee output/log.txt || true
+      - name: Sheet
+        run: |
+          pip install pillow
+          python - <<'PY'
+          import glob, os
+          from PIL import Image, ImageDraw
+          names = sorted({os.path.basename(p).rsplit('_',1)[0] for p in glob.glob('output/*_front.png')})
+          s = Image.new('RGB', (900, 300 * len(names)), (30, 30, 30)); d = ImageDraw.Draw(s)
+          for i, n in enumerate(names):
+              for j, t in enumerate(('front', 'top', 'side')):
+                  p = f'output/{n}_{t}.png'
+                  if os.path.exists(p): s.paste(Image.open(p).convert('RGB'), (j * 300, i * 300))
+              d.text((6, i * 300 + 6), n, fill=(255, 255, 0))
+          s.save('output/sheet.png')
+          PY
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ inputs.tag }}" --title "${{ inputs.tag }}" --notes assetview || true
+          gh release upload "${{ inputs.tag }}" output/sheet.png output/log.txt --clobber
