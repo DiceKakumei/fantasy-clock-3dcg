@@ -222,8 +222,8 @@ def point(loc, energy, color=(1, 1, 1), radius=0.3):
 
 
 # ---------- 素材共通 ----------
-GOLD = M("gold", (1.0, 0.68, 0.22), emit=1.6, metal=1.0, rough=0.25)
-GOLD_BRIGHT = M("goldb", (1.0, 0.75, 0.3), emit=6.0, metal=1.0, rough=0.3)
+GOLD = M("gold", (1.0, 0.52, 0.1), emit=1.0, ecolor=(1.0, 0.45, 0.08), metal=1.0, rough=0.25)
+GOLD_BRIGHT = M("goldb", (1.0, 0.58, 0.14), emit=3.2, ecolor=(1.0, 0.5, 0.1), metal=1.0, rough=0.3)
 CREAM = M("cream", (1, 0.93, 0.7), emit=8.0)
 DARKBLUE = M("darkblue", (0.015, 0.03, 0.16), metal=0.6, rough=0.35)
 
@@ -284,7 +284,7 @@ def scene2():
         a = R.uniform(0, 6.28); rr = R.choice((4.6, 3.4, 2.4, 1.6))
         sphere(R.uniform(0.07, 0.2), (math.cos(a) * rr, math.sin(a) * rr, 0.15), GOLD_BRIGHT, root, seg=10)
     for (gx, gy, gr, tn) in ((1.7, -1.4, 1.6, 16), (0.4, -2.2, 1.0, 12), (2.9, -0.2, 0.9, 11), (1.0, 0.6, 0.7, 9)):
-        gear(gr, tn, 0.18, M("gear", (0.9, 0.75, 0.45), emit=1.2, metal=1.0, rough=0.4), (gx, gy, -0.3), parent=root)
+        gear(gr, tn, 0.18, M("gear", (1.0, 0.5, 0.1), emit=1.6, ecolor=(1.0, 0.42, 0.08), metal=1.0, rough=0.4), (gx, gy, -0.3), parent=root)
         torus(gr * 0.55, 0.03, (gx, gy, -0.1), mat=GOLD_BRIGHT, parent=root, seg=48)
     hand(2.6, 0.07, 0.9, GOLD_BRIGHT, root, 0.2); hand(3.8, 0.05, 2.35, GOLD_BRIGHT, root, 0.22)
     sphere(0.22, (0, 0, 0.22), GOLD_BRIGHT, root)
@@ -303,7 +303,7 @@ def scene2():
     for k in range(70):
         sphere(0.05, (R.uniform(-8, 8), R.uniform(-5, 6), R.uniform(-4, 8)), M("d", (1, 0.9, 0.6), emit=20), seg=6)
     area((-4, -8, 6), (0, 0, 0), 8, 400, (0.8, 0.85, 1))
-    camera((-1.0, -13, -6.0), (-0.4, 0, 0.2), 32, roll=0.06)
+    camera((-1.5, -9.5, -4.8), (-0.6, 0, 0.3), 32, roll=0.06)
 
 
 # ================= シーン3: 時の大聖堂(浮遊する時計と瓦礫) =================
@@ -311,7 +311,7 @@ def scene3():
     world(star_scale=80, neb_scale=2, base=(0.004, 0.008, 0.03), c1=(0.02, 0.06, 0.25), c2=(0.1, 0.3, 0.7), neb_k=0.4)
     floor = M("floor", (0.02, 0.025, 0.04), metal=0.6, rough=0.12)
     stone = M("stone", (0.06, 0.05, 0.045), rough=0.8)
-    cyan = M("cyan", (0.6, 0.95, 1.0), emit=9.0, ecolor=(0.55, 0.9, 1.0))
+    cyan = M("cyan", (0.6, 0.95, 1.0), emit=6.0, ecolor=(0.55, 0.9, 1.0))
     bpy.ops.mesh.primitive_plane_add(size=200, location=(0, 40, 0)); bpy.context.active_object.data.materials.append(floor)
     for j in range(14):
         y = 6 + j * 6
@@ -340,7 +340,7 @@ def scene3():
         root = empty(loc, (R.uniform(0.9, 1.6), R.uniform(-0.8, 0.8), R.uniform(0, 6.28)))
         torus(r, r * 0.07, mat=GOLD, parent=root, seg=40)
         torus(r * 0.78, r * 0.025, mat=cyan, parent=root, seg=40, seg2=6)
-        cyl(r * 0.95, 0.04, (0, 0, -0.02), mat=M("dk", (0.01, 0.02, 0.04), emit=0.6, ecolor=(0.1, 0.4, 0.6)), parent=root, v=40)
+        cyl(r * 0.95, 0.04, (0, 0, -0.02), mat=M("dk", (0.01, 0.02, 0.04), emit=0.12, ecolor=(0.1, 0.4, 0.6)), parent=root, v=40)
         for q in range(6):
             box(r * 1.5, r * 0.025, 0.03, (0, 0, 0.01), (0, 0, q * 0.52), cyan, root)
         hand(r * 0.55, r * 0.05, R.uniform(0, 6), cyan, root, 0.03)
@@ -354,8 +354,8 @@ def scene3():
         bpy.ops.mesh.primitive_cone_add(radius1=0.5, radius2=0.3, depth=1.1, location=(x, y, 0.55), vertices=24)
         bpy.context.active_object.data.materials.append(M("bell", (0.03, 0.04, 0.07), metal=0.8, rough=0.3))
     bpy.ops.mesh.primitive_cone_add(radius1=5, radius2=0.5, depth=40, location=(0, 22, 20), vertices=48)
-    bpy.context.active_object.data.materials.append(M("beam", (0.4, 0.7, 1), emit=0.25, ecolor=(0.4, 0.7, 1), alpha=0.05))
-    area((0, 20, 15), (0, 20, 0), 14, 12000, (0.45, 0.7, 1.0))
+    bpy.context.active_object.data.materials.append(M("beam", (0.4, 0.7, 1), emit=0.2, ecolor=(0.4, 0.7, 1), alpha=0.03))
+    area((0, 20, 15), (0, 20, 0), 14, 3500, (0.45, 0.7, 1.0))
     camera((0, -3.0, 1.1), (0, 26, 4.2), 20, roll=0.0)
 
 
@@ -364,9 +364,9 @@ def scene4():
     world(star_scale=260, neb_scale=2.0, base=(0.01, 0.01, 0.05), c1=(0.12, 0.05, 0.35), c2=(0.4, 0.2, 0.7), neb_k=0.7)
     face = star_mat("face", 6.0, 0.5, (0.012, 0.015, 0.1), (0.12, 0.08, 0.55), (0.6, 0.25, 0.8), 0.7)
     ivory = M("ivory", (1, 0.95, 0.75), emit=5.0, ecolor=(1.0, 0.93, 0.7))
-    root = empty((-5.5, 26, 9.5), (math.radians(80), 0, math.radians(-28)))
-    rim = M("rim", (1, 0.9, 0.85), emit=4.0, ecolor=(1.0, 0.88, 0.9))
-    Rc = 12
+    root = empty((-4.5, 21, 12.5), (math.radians(84), 0, math.radians(-24)))
+    rim = M("rim", (1, 0.9, 0.85), emit=3.0, ecolor=(1.0, 0.85, 0.9))
+    Rc = 13
     torus(Rc, 1.0, mat=rim, parent=root, seg=128, seg2=24)
     torus(Rc * 0.88, 0.15, mat=GOLD_BRIGHT, parent=root, seg=128)
     for i in range(12):
