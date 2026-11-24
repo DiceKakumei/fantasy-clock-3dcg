@@ -293,11 +293,8 @@ def scene1():
         a = 0 if i == 0 else 3.2 * s
         root = empty((math.cos(phi) * a, math.sin(phi) * a, -i * 3.0), (0.40, -0.14, phi * 1.1), scale=s)
         clock(6.4, root, GOLD, GOLD, hour=-0.6 + i * 0.5, minute=0.5 + i * 0.9, face=glass, ticks=(i < 3))
-    for k in range(4):  # 背後の暗い青の骨組み(控えめ)
-        torus(R.uniform(3, 8), R.uniform(0.08, 0.16), (R.uniform(-3, 3), R.uniform(-3, 3), -R.uniform(6, 22)),
-              (R.uniform(0, 3), R.uniform(0, 3), R.uniform(0, 3)), DARKBLUE, seg=48)
-    sphere(7.0, (0.4, -0.2, -34), M("core", (0.2, 0.45, 1), emit=7, ecolor=(0.18, 0.42, 1.0)))
-    point((0, 0, -24), 30000, (0.4, 0.6, 1.0), 2)
+    sphere(7.0, (0.7, 6.3, -34), M("core", (0.2, 0.45, 1), emit=7, ecolor=(0.18, 0.42, 1.0)))
+    point((0.7, 6.3, -26), 30000, (0.4, 0.6, 1.0), 2)
     for k in range(100):
         dust(0.045, (R.uniform(-9, 9), R.uniform(-9, 9), R.uniform(-30, 5)), M("d", (1, 1, 1), emit=15), seg=6)
     camera((-0.3, -5.5, 15), (0.2, 0.3, -9), 36, roll=0.1)
