@@ -19,7 +19,7 @@ jobs:
           mv blender-5.0.1-linux-x64 blender
           echo "$(pwd)/blender" >> "$GITHUB_PATH"
       - name: Render
-        run: blender --background --python scripts/asset_view.py -- output 2>&1 | tee output/log.txt || true
+        run: mkdir -p output && (blender --background --python scripts/asset_view.py -- output 2>&1 | tee output/log.txt || true)
       - name: Sheet
         run: |
           pip install pillow
