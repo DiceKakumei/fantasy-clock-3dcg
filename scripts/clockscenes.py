@@ -148,11 +148,12 @@ def gear(r, teeth, depth, mat, loc=(0, 0, 0), rot=(0, 0, 0), parent=None):
 
 def rock(size, loc, mat, seed):
     rr = random.Random(seed)
-    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=size, location=loc)
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=3, radius=size, location=loc)
     o = bpy.context.active_object
+    bpy.ops.object.shade_smooth()
     bm = bmesh.new(); bm.from_mesh(o.data)
     for v in bm.verts:
-        v.co *= 1 + rr.uniform(-0.35, 0.35)
+        v.co *= 1 + rr.uniform(-0.12, 0.12)
     bm.to_mesh(o.data); bm.free()
     o.scale = (rr.uniform(0.6, 1.4), rr.uniform(0.5, 1.2), rr.uniform(0.4, 1.0))
     o.rotation_euler = (rr.uniform(0, 6), rr.uniform(0, 6), rr.uniform(0, 6))
@@ -229,26 +230,23 @@ DARKBLUE = M("darkblue", (0.015, 0.03, 0.16), metal=0.6, rough=0.35)
 
 # ================= シーン1: 螺旋に続く時計トンネル =================
 def scene1():
-    world(star_scale=300, neb_scale=2.5, c1=(0.02, 0.09, 0.7), c2=(0.15, 0.55, 1.0), neb_k=1.3, strength=1.2)
-    glass = M("glass", (0.05, 0.15, 0.8), emit=0.5, ecolor=(0.1, 0.3, 1.0), alpha=0.22)
-    n = 8
+    world(star_scale=500, neb_scale=2.2, base=(0.002, 0.004, 0.02), c1=(0.01, 0.04, 0.4), c2=(0.1, 0.4, 0.9), neb_k=0.8, strength=0.7)
+    glass = M("glass", (0.03, 0.1, 0.6), emit=0.6, ecolor=(0.1, 0.3, 1.0), alpha=0.18)
+    n = 9
     for i in range(n):
-        s = 0.68 ** i
-        phi = i * 0.6
-        root = empty((math.cos(phi) * 2.2 * s * 2, math.sin(phi) * 2.2 * s * 2, -i * 3.2),
-                     (0.38, -0.12, phi * 1.1), scale=s)
-        clock(6.0, root, GOLD, GOLD, hour=-0.6 + i * 0.5, minute=0.5 + i * 0.9, face=glass, ticks=(i < 3))
-    # 影になる暗い青の腕(螺旋の骨組み)
-    for k in range(7):
-        t = k * 0.9
-        torus(R.uniform(2.5, 9), R.uniform(0.15, 0.4), (R.uniform(-3, 3), R.uniform(-3, 3), -R.uniform(2, 20)),
+        s = 0.7 ** i
+        phi = i * 0.65
+        a = 0 if i == 0 else 3.2 * s
+        root = empty((math.cos(phi) * a, math.sin(phi) * a, -i * 3.0), (0.40, -0.14, phi * 1.1), scale=s)
+        clock(6.4, root, GOLD, GOLD, hour=-0.6 + i * 0.5, minute=0.5 + i * 0.9, face=glass, ticks=(i < 3))
+    for k in range(4):  # 背後の暗い青の骨組み(控えめ)
+        torus(R.uniform(3, 8), R.uniform(0.08, 0.16), (R.uniform(-3, 3), R.uniform(-3, 3), -R.uniform(6, 22)),
               (R.uniform(0, 3), R.uniform(0, 3), R.uniform(0, 3)), DARKBLUE, seg=48)
-    # 奥の光
-    sphere(2.2, (0.4, -0.2, -28), M("core", (0.6, 0.8, 1), emit=60, ecolor=(0.45, 0.7, 1.0)))
-    point((0, 0, -22), 20000, (0.4, 0.6, 1.0), 2)
-    for k in range(120):  # 星屑
-        sphere(0.06, (R.uniform(-9, 9), R.uniform(-9, 9), R.uniform(-30, 5)), M("d", (1, 1, 1), emit=15), seg=6)
-    camera((-0.5, -6, 17), (0.2, 0.3, -9), 34, roll=0.08)
+    sphere(2.6, (0.4, -0.2, -30), M("core", (0.6, 0.8, 1), emit=60, ecolor=(0.45, 0.7, 1.0)))
+    point((0, 0, -24), 30000, (0.4, 0.6, 1.0), 2)
+    for k in range(100):
+        sphere(0.045, (R.uniform(-9, 9), R.uniform(-9, 9), R.uniform(-30, 5)), M("d", (1, 1, 1), emit=15), seg=6)
+    camera((-0.3, -5.5, 15), (0.2, 0.3, -9), 36, roll=0.1)
 
 
 # ================= シーン2: 星空の大時計と歯車 =================
@@ -265,7 +263,7 @@ def scene2():
     nt.links.new(tc.outputs["Generated"], noi.inputs["Vector"])
     cl = nt.nodes.new("ShaderNodeMath"); cl.operation = "MULTIPLY"
     nt.links.new(mr.outputs["Result"], cl.inputs[0]); nt.links.new(noi.outputs["Fac"], cl.inputs[1])
-    sky = nt.nodes.new("ShaderNodeBackground"); sky.inputs["Color"].default_value = (1.0, 0.85, 0.6)
+    sky = nt.nodes.new("ShaderNodeBackground"); sky.inputs["Color"].default_value = (1.0, 0.85, 0.6, 1)
     sky.inputs["Strength"].default_value = 2.2
     nt.links.new(mr.outputs["Result"], sky.inputs["Strength"])
     old = [l for l in nt.links if l.to_node.type == "OUTPUT_WORLD"][0]
@@ -315,30 +313,31 @@ def scene3():
     stone = M("stone", (0.06, 0.05, 0.045), rough=0.8)
     cyan = M("cyan", (0.6, 0.95, 1.0), emit=9.0, ecolor=(0.55, 0.9, 1.0))
     bpy.ops.mesh.primitive_plane_add(size=200, location=(0, 40, 0)); bpy.context.active_object.data.materials.append(floor)
-    for j in range(14):  # 左右の柱列
+    for j in range(14):
         y = 6 + j * 6
         for sx in (-1, 1):
             box(1.6, 1.6, 15, (sx * 9, y, 7.5), mat=stone)
             box(2.2, 2.2, 0.8, (sx * 9, y, 0.4), mat=stone)
-            torus(4.5, 0.5, (sx * 4.5, y, 14.5), (math.pi / 2, 0, 0), stone, seg=32)
+            torus(4.5, 0.35, (sx * 4.5, y, 14.5), (math.pi / 2, 0, 0), stone, seg=32)
             point((sx * 8, y - 1.5, 1.2), 900, (1.0, 0.6, 0.2), 0.4)
-    box(30, 100, 1, (0, 50, 16), mat=stone)
+    box(30, 100, 1, (0, 50, 17), mat=stone)
     box(1, 100, 15, (-14, 50, 7), mat=stone); box(1, 100, 15, (14, 50, 7), mat=stone)
-    # 床の魔法陣
-    for rr, mn in ((2.2, 0.04), (3.4, 0.03), (5.5, 0.05), (8, 0.04), (12, 0.05), (18, 0.05)):
-        torus(rr, mn, (0, 9, 0.02), mat=cyan, seg=128, seg2=6)
+    for rr, mn in ((2.4, 0.05), (3.8, 0.04), (6, 0.06), (9, 0.05), (13, 0.06), (19, 0.06)):
+        torus(rr, mn, (0, 7, 0.02), mat=cyan, seg=128, seg2=6)
         for k in range(int(rr * 4)):
             a = k / (rr * 4) * 6.28
-            text(R.choice("IVXLTMFHNKZYP"), 0.45, (math.cos(a) * (rr + 0.5), 9 + math.sin(a) * (rr + 0.5), 0.03),
+            text(R.choice("IVXLTMFHNKZYP"), 0.5, (math.cos(a) * (rr + 0.55), 7 + math.sin(a) * (rr + 0.55), 0.03),
                  (0, 0, a - math.pi / 2), cyan, extr=0.01)
-    for k in range(10):
-        a = k * 0.628
-        box(0.04, 4.5, 0.03, (math.cos(a) * 0.1, 9, 0.025), (0, 0, a), cyan)
-    # 中央の浮遊する時計(円盤)
-    for k in range(46):
-        r = R.uniform(0.35, 1.3)
-        loc = (R.uniform(-6.5, 6.5), R.uniform(5, 45), R.uniform(2.5, 13))
-        root = empty(loc, (R.uniform(0.6, 1.6), R.uniform(-0.8, 0.8), R.uniform(0, 6.28)))
+    for k in range(12):
+        a = k * 0.5236
+        box(0.05, 5, 0.03, (math.cos(a) * 0.1, 7, 0.025), (0, 0, a), cyan)
+    for k in range(60):
+        r = R.uniform(0.3, 1.0) if k > 4 else R.uniform(1.3, 1.8)
+        if k <= 4:
+            loc = (R.choice((-1, 1)) * R.uniform(3.2, 5.2), R.uniform(3, 14), R.uniform(2.5, 6))
+        else:
+            loc = (R.uniform(-6.5, 6.5), R.uniform(5, 50), R.uniform(2.5, 13))
+        root = empty(loc, (R.uniform(0.9, 1.6), R.uniform(-0.8, 0.8), R.uniform(0, 6.28)))
         torus(r, r * 0.07, mat=GOLD, parent=root, seg=40)
         torus(r * 0.78, r * 0.025, mat=cyan, parent=root, seg=40, seg2=6)
         cyl(r * 0.95, 0.04, (0, 0, -0.02), mat=M("dk", (0.01, 0.02, 0.04), emit=0.6, ecolor=(0.1, 0.4, 0.6)), parent=root, v=40)
@@ -346,57 +345,54 @@ def scene3():
             box(r * 1.5, r * 0.025, 0.03, (0, 0, 0.01), (0, 0, q * 0.52), cyan, root)
         hand(r * 0.55, r * 0.05, R.uniform(0, 6), cyan, root, 0.03)
         hand(r * 0.8, r * 0.035, R.uniform(0, 6), cyan, root, 0.04)
-    for k in range(95):  # 瓦礫
-        rock(R.uniform(0.15, 0.7), (R.uniform(-7, 7), R.uniform(3, 45), R.uniform(1.5, 14)), M("rk", (0.07, 0.045, 0.035), rough=0.7), k)
-    box(5, 3.5, 0.9, (0.6, 5.5, 0.5), (0, 0, 0.1), stone)  # 床の割れた石板
-    rock(2.6, (0.3, 5.0, 0.4), M("slab", (0.09, 0.1, 0.12), rough=0.6), 999).scale = (1.5, 1.0, 0.25)
-    for (x, y) in ((-2.4, 3.0), (-0.8, 12), (-1.5, 18), (3.2, 20)):
+    for k in range(110):
+        rock(R.uniform(0.12, 0.5), (R.uniform(-7, 7), R.uniform(3, 50), R.uniform(1.0, 14)), M("rk", (0.07, 0.045, 0.035), rough=0.7), k)
+    for (x, y, s) in ((0.8, 3.2, 0.9), (-2.2, 6.5, 0.7), (2.6, 9.0, 0.6)):  # 床の割れた石板
+        o = rock(s, (x, y, s * 0.18), M("slab", (0.09, 0.1, 0.12), rough=0.6), int(x * 100))
+        o.scale = (1.6, 1.0, 0.22)
+    for (x, y) in ((-2.4, 2.0), (-0.8, 10), (-1.5, 15), (3.2, 12)):
         bpy.ops.mesh.primitive_cone_add(radius1=0.5, radius2=0.3, depth=1.1, location=(x, y, 0.55), vertices=24)
         bpy.context.active_object.data.materials.append(M("bell", (0.03, 0.04, 0.07), metal=0.8, rough=0.3))
-    # 光の柱
     bpy.ops.mesh.primitive_cone_add(radius1=5, radius2=0.5, depth=40, location=(0, 22, 20), vertices=48)
     bpy.context.active_object.data.materials.append(M("beam", (0.4, 0.7, 1), emit=0.25, ecolor=(0.4, 0.7, 1), alpha=0.05))
     area((0, 20, 15), (0, 20, 0), 14, 12000, (0.45, 0.7, 1.0))
-    camera((0, -1.5, 1.3), (0, 24, 7.5), 22, roll=0.0)
+    camera((0, -3.0, 1.1), (0, 26, 4.2), 20, roll=0.0)
 
 
-# ================= シーン4: 巨大時計と宇宙飛行士 =================
+# ================= シーン4: 巨大時計と宇宙(宇宙飛行士なし) =================
 def scene4():
-    world(star_scale=200, neb_scale=2.0, base=(0.01, 0.01, 0.05), c1=(0.15, 0.05, 0.4), c2=(0.5, 0.2, 0.8), neb_k=0.8)
-    face = star_mat("face", 3.0, 1.2, (0.012, 0.015, 0.1), (0.15, 0.1, 0.7), (0.8, 0.3, 0.9), 1.0)
-    ivory = M("ivory", (1, 0.95, 0.75), emit=7.0, ecolor=(1.0, 0.93, 0.7))
-    root = empty((-9, 24, 12), (math.pi / 2 - 0.2, 0.25, 0.55 + math.pi / 2 - math.pi / 2))
-    root.rotation_euler = (math.radians(75), 0, math.radians(-30))
-    rim = M("rim", (1, 0.9, 0.85), emit=14.0, ecolor=(1.0, 0.85, 0.9))
-    torus(15, 1.4, mat=rim, parent=root, seg=128, seg2=24)
-    torus(13.2, 0.18, mat=GOLD_BRIGHT, parent=root, seg=128)
+    world(star_scale=260, neb_scale=2.0, base=(0.01, 0.01, 0.05), c1=(0.12, 0.05, 0.35), c2=(0.4, 0.2, 0.7), neb_k=0.7)
+    face = star_mat("face", 6.0, 0.5, (0.012, 0.015, 0.1), (0.12, 0.08, 0.55), (0.6, 0.25, 0.8), 0.7)
+    ivory = M("ivory", (1, 0.95, 0.75), emit=5.0, ecolor=(1.0, 0.93, 0.7))
+    root = empty((-5.5, 26, 9.5), (math.radians(80), 0, math.radians(-28)))
+    rim = M("rim", (1, 0.9, 0.85), emit=4.0, ecolor=(1.0, 0.88, 0.9))
+    Rc = 12
+    torus(Rc, 1.0, mat=rim, parent=root, seg=128, seg2=24)
+    torus(Rc * 0.88, 0.15, mat=GOLD_BRIGHT, parent=root, seg=128)
     for i in range(12):
         a = math.radians(90 - i * 30)
-        text(ROMAN[i], 2.0, (math.cos(a) * 11.0, math.sin(a) * 11.0, 0), (0, 0, a - math.pi / 2), ivory, root, 0.15)
-    cyl(15, 0.1, (0, 0, -0.5), mat=face, parent=root, v=128)
-    hand(8.0, 0.55, math.radians(88), ivory, root, 0.2); hand(6.0, 0.7, math.radians(125), ivory, root, 0.3)
-    sphere(0.9, (0, 0, 0.3), ivory, root)
-    # 右の機械壁
+        text(ROMAN[i], 1.7, (math.cos(a) * Rc * 0.73, math.sin(a) * Rc * 0.73, 0), (0, 0, a - math.pi / 2), ivory, root, 0.12)
+    cyl(Rc, 0.1, (0, 0, -0.5), mat=face, parent=root, v=128)
+    hand(6.5, 0.5, math.radians(88), ivory, root, 0.2); hand(4.8, 0.6, math.radians(125), ivory, root, 0.3)
+    sphere(0.8, (0, 0, 0.3), ivory, root)
     dk = M("mach", (0.02, 0.03, 0.05), metal=0.7, rough=0.4)
     red = M("red", (1, 0.1, 0.2), emit=14.0); teal = M("teal", (0.2, 0.9, 1), emit=10.0)
-    for k in range(60):
-        x = R.uniform(4.5, 11); y = R.uniform(8, 22); z = R.uniform(-1, 14)
-        box(R.uniform(0.6, 2.2), R.uniform(0.6, 2), R.uniform(0.6, 3), (x, y, z), mat=dk)
-        if R.random() < 0.5:
-            box(0.5, 0.05, 0.25, (x - 0.9, y - 1.01, z + R.uniform(-0.5, 0.5)), mat=R.choice([red, teal]))
-    box(9, 30, 14, (13, 20, 6), mat=dk)
-    # 床(段状)
+    box(14, 2, 28, (9.5, 26, 11), mat=dk)  # 奥の壁
+    for k in range(70):
+        x = R.uniform(2.5, 11.5); y = 24.5 - R.uniform(0, 3); z = R.uniform(-0.5, 20)
+        w, d, h = R.uniform(0.8, 2.4), R.uniform(0.6, 2.0), R.uniform(0.8, 3)
+        box(w, d, h, (x, y, z), mat=dk)
+        for q in range(R.randint(0, 3)):
+            box(0.4, 0.05, 0.2, (x + R.uniform(-w / 3, w / 3), y - d / 2 - 0.02, z + R.uniform(-h / 3, h / 3)), mat=R.choice([red, teal]))
     pink = M("pk", (1, 0.7, 0.9), emit=3.0, ecolor=(1, 0.65, 0.9))
     for k in range(8):
-        box(30, 1.2, 0.12 + k * 0.03, (0, -1.5 + k * 1.6, 0.06 + k * 0.015 - 0.5 + 0.5), mat=M("st", (0.02, 0.03, 0.05), metal=0.5, rough=0.25))
-        box(30, 0.04, 0.03, (0, -0.9 + k * 1.6, 0.14), mat=teal if k % 2 else pink)
-    box(80, 3, 0.05, (0, 30, 0.02), mat=M("hz", (1, 0.7, 0.95), emit=5.0, ecolor=(1, 0.65, 0.95)))
+        box(30, 1.2, 0.15 + k * 0.03, (0, -1.5 + k * 1.6, 0.06), mat=M("st", (0.02, 0.03, 0.05), metal=0.5, rough=0.25))
+        box(30, 0.04, 0.03, (0, -0.9 + k * 1.6, 0.17), mat=teal if k % 2 else pink)
+    box(120, 3, 0.1, (0, 40, 0.02), mat=M("hz", (1, 0.75, 0.95), emit=9.0, ecolor=(1, 0.7, 0.95)))
     for k in range(80):
-        sphere(R.uniform(0.02, 0.08), (R.uniform(-6, 6), R.uniform(2, 14), R.uniform(0, 12)), M("d", (0.7, 0.8, 1), emit=18), seg=6)
-    ax, ay = 0.7, 0.0  # 宇宙飛行士は外した(ユーザー指示)。光の向きの基準点だけ残す
-    area((-1, -6, 4), (ax, ay, 1), 6, 500, (1.0, 0.7, 0.95))   # 時計側の縁光
-    area((3, -8, 3), (ax, ay, 1), 4, 150, (0.7, 0.8, 1.0))
-    camera((0, -8.5, 1.5), (0.8, 0, 5.0), 30, roll=0.0)
+        sphere(R.uniform(0.02, 0.07), (R.uniform(-6, 6), R.uniform(2, 14), R.uniform(0, 12)), M("d", (0.7, 0.8, 1), emit=18), seg=6)
+    area((-1, -6, 4), (0, 0, 1), 6, 500, (1.0, 0.7, 0.95))
+    camera((0, -8.5, 1.3), (0.4, 0, 5.5), 28, roll=0.0)
 
 
 {1: scene1, 2: scene2, 3: scene3, 4: scene4}[SID]()
