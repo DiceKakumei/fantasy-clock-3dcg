@@ -325,7 +325,7 @@ def scene1():
         ao = bpy.data.objects.new("arm", cd); bpy.context.collection.objects.link(ao); ao.data.materials.append(DARKBLUE)
     # 奥の青い光(球でなく、重ねた薄い光の層)
     for rr in (3, 5, 7, 9, 12):
-        sphere(rr, (0.7, 6.3, -34), M("core", (0.2, 0.45, 1), emit=3.0, ecolor=(0.18, 0.42, 1.0), alpha=0.07), None, seg=24)
+        sphere(rr, (0.7, 6.3, -34), M("core", (0.2, 0.45, 1), emit=1.1, ecolor=(0.18, 0.42, 1.0), alpha=0.035), None, seg=24)
     point((0.7, 6.3, -26), 30000, (0.4, 0.6, 1.0), 2)
     for k in range(420):
         dust(R.uniform(0.02, 0.07), (R.uniform(-10, 10), R.uniform(-10, 10), R.uniform(-32, 5)), M("d", (1, 1, 1), emit=R.uniform(8, 26)), seg=6)
@@ -391,7 +391,7 @@ def scene2():
     ro.rotation_euler = (0, 0, 0.3)
     for k in range(9):
         sparkle((R.uniform(-6, 6), R.uniform(-3, 4), R.uniform(-1, 7)), R.uniform(0.18, 0.5), CREAM, (1.2, 0, 0.3))
-    cloud = M("cloud", (1.0, 0.92, 0.78), emit=1.2, ecolor=(1.0, 0.85, 0.65))
+    cloud = M("cloud", (0.35, 0.38, 0.55), emit=0.45, ecolor=(0.9, 0.7, 0.55))
     for k in range(34):  # 下の雲海
         sphere(R.uniform(2, 4.5), (R.uniform(-16, 16), R.uniform(6, 26), R.uniform(-12, -6)), cloud, None, seg=12, scale=(1.8, 1.0, 0.45))
     for k in range(120):
