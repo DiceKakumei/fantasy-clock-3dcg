@@ -222,8 +222,8 @@ def point(loc, energy, color=(1, 1, 1), radius=0.3):
 
 
 # ---------- 素材共通 ----------
-GOLD = M("gold", (1.0, 0.52, 0.1), emit=1.0, ecolor=(1.0, 0.45, 0.08), metal=1.0, rough=0.25)
-GOLD_BRIGHT = M("goldb", (1.0, 0.58, 0.14), emit=3.2, ecolor=(1.0, 0.5, 0.1), metal=1.0, rough=0.3)
+GOLD = M("gold", (1.0, 0.64, 0.1), emit=1.0, ecolor=(1.0, 0.56, 0.06), metal=1.0, rough=0.25)
+GOLD_BRIGHT = M("goldb", (1.0, 0.68, 0.12), emit=3.2, ecolor=(1.0, 0.6, 0.06), metal=1.0, rough=0.3)
 CREAM = M("cream", (1, 0.93, 0.7), emit=8.0)
 DARKBLUE = M("darkblue", (0.015, 0.03, 0.16), metal=0.6, rough=0.35)
 
@@ -284,7 +284,7 @@ def scene2():
         a = R.uniform(0, 6.28); rr = R.choice((4.6, 3.4, 2.4, 1.6))
         sphere(R.uniform(0.07, 0.2), (math.cos(a) * rr, math.sin(a) * rr, 0.15), GOLD_BRIGHT, root, seg=10)
     for (gx, gy, gr, tn) in ((1.7, -1.4, 1.6, 16), (0.4, -2.2, 1.0, 12), (2.9, -0.2, 0.9, 11), (1.0, 0.6, 0.7, 9)):
-        gear(gr, tn, 0.18, M("gear", (1.0, 0.5, 0.1), emit=1.6, ecolor=(1.0, 0.42, 0.08), metal=1.0, rough=0.4), (gx, gy, -0.3), parent=root)
+        gear(gr, tn, 0.18, M("gear", (1.0, 0.6, 0.1), emit=1.6, ecolor=(1.0, 0.5, 0.06), metal=1.0, rough=0.4), (gx, gy, -0.3), parent=root)
         torus(gr * 0.55, 0.03, (gx, gy, -0.1), mat=GOLD_BRIGHT, parent=root, seg=48)
     hand(2.6, 0.07, 0.9, GOLD_BRIGHT, root, 0.2); hand(3.8, 0.05, 2.35, GOLD_BRIGHT, root, 0.22)
     sphere(0.22, (0, 0, 0.22), GOLD_BRIGHT, root)
@@ -365,7 +365,7 @@ def scene4():
     face = star_mat("face", 6.0, 0.5, (0.012, 0.015, 0.1), (0.12, 0.08, 0.55), (0.6, 0.25, 0.8), 0.7)
     ivory = M("ivory", (1, 0.95, 0.75), emit=5.0, ecolor=(1.0, 0.93, 0.7))
     root = empty((-4.5, 21, 12.5), (math.radians(84), 0, math.radians(-24)))
-    rim = M("rim", (1, 0.9, 0.85), emit=3.0, ecolor=(1.0, 0.85, 0.9))
+    rim = M("rim", (1, 0.9, 0.85), emit=2.0, ecolor=(1.0, 0.85, 0.9))
     Rc = 13
     torus(Rc, 1.0, mat=rim, parent=root, seg=128, seg2=24)
     torus(Rc * 0.88, 0.15, mat=GOLD_BRIGHT, parent=root, seg=128)
