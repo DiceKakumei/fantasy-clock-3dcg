@@ -142,6 +142,7 @@ def gear(r, teeth, depth, mat, loc=(0, 0, 0), rot=(0, 0, 0), parent=None):
     me = bpy.data.meshes.new("g"); bm.to_mesh(me); bm.free()
     o = bpy.data.objects.new("g", me); bpy.context.collection.objects.link(o)
     o.location = loc; o.rotation_euler = rot; o.data.materials.append(mat)
+    bv = o.modifiers.new('b', 'BEVEL'); bv.width = depth * 0.12; bv.segments = 2
     if parent: o.parent = parent
     return o
 
@@ -221,6 +222,59 @@ def point(loc, energy, color=(1, 1, 1), radius=0.3):
     return o
 
 
+# ---------- Poly Haven(CC0)素材の取り込み・イラスト風の輪郭線 ----------
+from mathutils import Matrix
+ASSET_DIR = os.path.join(WORKSPACE, "assets", "ph")
+_TPL = {}
+NOFS = bpy.data.collections.new("nofs"); sc.collection.children.link(NOFS)  # 輪郭線を引かない物(星屑)
+
+
+def load_asset(name):
+    if name in _TPL: return _TPL[name]
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=f"{ASSET_DIR}/{name}/{name}_1k.gltf")
+    new = [o for o in bpy.data.objects if o not in before]
+    bpy.context.view_layer.update()
+    meshes = [o for o in new if o.type == "MESH"]
+    lo = Vector((1e9,) * 3); hi = Vector((-1e9,) * 3)
+    for o in meshes:
+        for c in o.bound_box:
+            w = o.matrix_world @ Vector(c)
+            lo = Vector(map(min, lo, w)); hi = Vector(map(max, hi, w))
+    ctr = (lo + hi) / 2
+    rels = [(o.data, Matrix.Translation(-ctr) @ o.matrix_world.copy()) for o in meshes]
+    for o in new:
+        o.hide_render = True; o.hide_viewport = True
+    _TPL[name] = (rels, max(hi - lo))
+    return _TPL[name]
+
+
+def place(name, loc, rot=(0, 0, 0), size=1.0):
+    rels, sz = load_asset(name)
+    root = empty(loc, rot, scale=size / sz)
+    for data, rel in rels:
+        c = bpy.data.objects.new(name, data); bpy.context.collection.objects.link(c)
+        c.matrix_basis = rel; c.parent = root
+    return root
+
+
+def dust(r, loc, mat, seg=6):
+    o = sphere(r, loc, mat, None, seg=seg)
+    for c in list(o.users_collection): c.objects.unlink(o)
+    NOFS.objects.link(o)
+    return o
+
+
+def freestyle():
+    sc.render.use_freestyle = True
+    sc.render.line_thickness_mode = "ABSOLUTE"; sc.render.line_thickness = 1.3
+    vl = bpy.context.view_layer; vl.use_freestyle = True
+    ls = vl.freestyle_settings.linesets.new("L")
+    ls.select_silhouette = True; ls.select_crease = True; ls.select_border = True
+    ls.select_by_collection = True; ls.collection = NOFS; ls.collection_negation = "EXCLUSIVE"
+    ls.linestyle.color = (0.01, 0.02, 0.06); ls.linestyle.thickness = 1.3
+
+
 # ---------- 素材共通 ----------
 GOLD = M("gold", (1.0, 0.64, 0.1), emit=1.0, ecolor=(1.0, 0.56, 0.06), metal=1.0, rough=0.25)
 GOLD_BRIGHT = M("goldb", (1.0, 0.68, 0.12), emit=3.2, ecolor=(1.0, 0.6, 0.06), metal=1.0, rough=0.3)
@@ -242,10 +296,10 @@ def scene1():
     for k in range(4):  # 背後の暗い青の骨組み(控えめ)
         torus(R.uniform(3, 8), R.uniform(0.08, 0.16), (R.uniform(-3, 3), R.uniform(-3, 3), -R.uniform(6, 22)),
               (R.uniform(0, 3), R.uniform(0, 3), R.uniform(0, 3)), DARKBLUE, seg=48)
-    sphere(2.6, (0.4, -0.2, -30), M("core", (0.6, 0.8, 1), emit=60, ecolor=(0.45, 0.7, 1.0)))
+    sphere(7.0, (0.4, -0.2, -34), M("core", (0.2, 0.45, 1), emit=7, ecolor=(0.18, 0.42, 1.0)))
     point((0, 0, -24), 30000, (0.4, 0.6, 1.0), 2)
     for k in range(100):
-        sphere(0.045, (R.uniform(-9, 9), R.uniform(-9, 9), R.uniform(-30, 5)), M("d", (1, 1, 1), emit=15), seg=6)
+        dust(0.045, (R.uniform(-9, 9), R.uniform(-9, 9), R.uniform(-30, 5)), M("d", (1, 1, 1), emit=15), seg=6)
     camera((-0.3, -5.5, 15), (0.2, 0.3, -9), 36, roll=0.1)
 
 
@@ -301,9 +355,9 @@ def scene2():
     for k in range(3):
         sparkle((R.uniform(-5, 5), R.uniform(-3, 4), R.uniform(2, 6)), R.uniform(0.5, 1.1), CREAM, (1.2, 0, 0.3))
     for k in range(70):
-        sphere(0.05, (R.uniform(-8, 8), R.uniform(-5, 6), R.uniform(-4, 8)), M("d", (1, 0.9, 0.6), emit=20), seg=6)
+        dust(0.05, (R.uniform(-8, 8), R.uniform(-5, 6), R.uniform(-4, 8)), M("d", (1, 0.9, 0.6), emit=20), seg=6)
     area((-4, -8, 6), (0, 0, 0), 8, 400, (0.8, 0.85, 1))
-    camera((-1.5, -9.5, -4.8), (-0.6, 0, 0.3), 32, roll=0.06)
+    camera((-1.3, -12.5, -5.5), (-0.5, 0, 0.2), 32, roll=0.06)
 
 
 # ================= シーン3: 時の大聖堂(浮遊する時計と瓦礫) =================
@@ -318,7 +372,7 @@ def scene3():
         for sx in (-1, 1):
             box(1.6, 1.6, 15, (sx * 9, y, 7.5), mat=stone)
             box(2.2, 2.2, 0.8, (sx * 9, y, 0.4), mat=stone)
-            torus(4.5, 0.35, (sx * 4.5, y, 14.5), (math.pi / 2, 0, 0), stone, seg=32)
+            torus(4.5, 0.2, (sx * 4.5, y, 14.5), (math.pi / 2, 0, 0), stone, seg=32)
             point((sx * 8, y - 1.5, 1.2), 900, (1.0, 0.6, 0.2), 0.4)
     box(30, 100, 1, (0, 50, 17), mat=stone)
     box(1, 100, 15, (-14, 50, 7), mat=stone); box(1, 100, 15, (14, 50, 7), mat=stone)
@@ -345,11 +399,22 @@ def scene3():
             box(r * 1.5, r * 0.025, 0.03, (0, 0, 0.01), (0, 0, q * 0.52), cyan, root)
         hand(r * 0.55, r * 0.05, R.uniform(0, 6), cyan, root, 0.03)
         hand(r * 0.8, r * 0.035, R.uniform(0, 6), cyan, root, 0.04)
-    for k in range(110):
-        rock(R.uniform(0.12, 0.5), (R.uniform(-7, 7), R.uniform(3, 50), R.uniform(1.0, 14)), M("rk", (0.07, 0.045, 0.035), rough=0.7), k)
-    for (x, y, s) in ((0.8, 3.2, 0.9), (-2.2, 6.5, 0.7), (2.6, 9.0, 0.6)):  # 床の割れた石板
-        o = rock(s, (x, y, s * 0.18), M("slab", (0.09, 0.1, 0.12), rough=0.6), int(x * 100))
-        o.scale = (1.6, 1.0, 0.22)
+    for k in range(130):  # 浮遊する破片(Poly Haven CC0の岩)
+        nm = R.choice(["rock_07", "rock_07", "moon_rock_01", "moon_rock_03", "moon_rock_05"])
+        place(nm, (R.uniform(-7, 7), R.uniform(3, 50), R.uniform(1.0, 14)),
+              (R.uniform(0, 6.28), R.uniform(0, 6.28), R.uniform(0, 6.28)), R.uniform(0.25, 0.9))
+    for (x, y, s, rz) in ((0.8, 4.0, 3.2, 0.4), (-2.6, 8.0, 2.4, 2.0), (3.0, 11.0, 2.0, 4.0)):  # 床の割れた石板
+        o = place("boulder_01", (x, y, s * 0.12), (0, 0, rz), s); o.scale = (o.scale[0] * 1.5, o.scale[1] * 1.2, o.scale[2] * 0.45)
+    for (x, y, rz) in ((-6.0, 12, 0.5), (6.2, 18, 2.6), (-6.5, 28, 0.3), (6.5, 36, 2.9)):  # 古い彫像
+        place("gothic_statue", (x, y, 1.6), (0, 0, rz), 3.4)
+    cy = M("cyan2", (0.6, 0.95, 1.0), emit=7.0, ecolor=(0.55, 0.9, 1.0))
+    for k in range(16):  # 浮遊する懐中時計 + 光の環(Poly Haven CC0)
+        nm = R.choice(["vintage_pocket_watch", "pocket_watch", "wall_clock"])
+        s = R.uniform(0.7, 1.6) if k > 3 else R.uniform(1.4, 2.0)
+        loc = (R.choice((-1, 1)) * R.uniform(3.0, 5.0), R.uniform(3, 12), R.uniform(2.2, 5.5)) if k <= 3 else \
+            (R.uniform(-6, 6), R.uniform(8, 45), R.uniform(2.5, 12))
+        root = place(nm, loc, (R.uniform(-0.5, 0.5), R.uniform(-0.5, 0.5), R.uniform(-0.6, 0.6)), s)
+        torus(0.06, 0.0016, (0, 0, 0), (math.pi / 2, 0, 0), cy, root, seg=48, seg2=6)
     for (x, y) in ((-2.4, 2.0), (-0.8, 10), (-1.5, 15), (3.2, 12)):
         bpy.ops.mesh.primitive_cone_add(radius1=0.5, radius2=0.3, depth=1.1, location=(x, y, 0.55), vertices=24)
         bpy.context.active_object.data.materials.append(M("bell", (0.03, 0.04, 0.07), metal=0.8, rough=0.3))
@@ -365,10 +430,11 @@ def scene4():
     face = star_mat("face", 6.0, 0.5, (0.012, 0.015, 0.1), (0.12, 0.08, 0.55), (0.6, 0.25, 0.8), 0.7)
     ivory = M("ivory", (1, 0.95, 0.75), emit=5.0, ecolor=(1.0, 0.93, 0.7))
     root = empty((-4.5, 21, 12.5), (math.radians(84), 0, math.radians(-24)))
-    rim = M("rim", (1, 0.9, 0.85), emit=2.0, ecolor=(1.0, 0.85, 0.9))
+    rim = M("rim", (1, 0.9, 0.85), emit=1.6, ecolor=(1.0, 0.85, 0.9))
     Rc = 13
     torus(Rc, 1.0, mat=rim, parent=root, seg=128, seg2=24)
     torus(Rc * 0.88, 0.15, mat=GOLD_BRIGHT, parent=root, seg=128)
+    torus(Rc * 1.07, 0.55, mat=M('outer', (0.05, 0.06, 0.1), metal=0.8, rough=0.3), parent=root, seg=128, seg2=16)
     for i in range(12):
         a = math.radians(90 - i * 30)
         text(ROMAN[i], 1.7, (math.cos(a) * Rc * 0.73, math.sin(a) * Rc * 0.73, 0), (0, 0, a - math.pi / 2), ivory, root, 0.12)
@@ -390,13 +456,15 @@ def scene4():
         box(30, 0.04, 0.03, (0, -0.9 + k * 1.6, 0.17), mat=teal if k % 2 else pink)
     box(120, 3, 0.1, (0, 40, 0.02), mat=M("hz", (1, 0.75, 0.95), emit=9.0, ecolor=(1, 0.7, 0.95)))
     for k in range(80):
-        sphere(R.uniform(0.02, 0.07), (R.uniform(-6, 6), R.uniform(2, 14), R.uniform(0, 12)), M("d", (0.7, 0.8, 1), emit=18), seg=6)
+        dust(R.uniform(0.02, 0.07), (R.uniform(-6, 6), R.uniform(2, 14), R.uniform(0, 12)), M("d", (0.7, 0.8, 1), emit=18), seg=6)
     area((-1, -6, 4), (0, 0, 1), 6, 500, (1.0, 0.7, 0.95))
     camera((0, -8.5, 1.3), (0.4, 0, 5.5), 28, roll=0.0)
 
 
 {1: scene1, 2: scene2, 3: scene3, 4: scene4}[SID]()
 
+if os.environ.get("TOON", "1") == "1":
+    freestyle()
 sc.render.engine = "CYCLES"; sc.cycles.device = "CPU"; sc.cycles.samples = SAMPLES
 sc.cycles.use_denoising = True; sc.cycles.denoiser = "OPENIMAGEDENOISE"
 sc.cycles.max_bounces = 4; sc.cycles.use_adaptive_sampling = True

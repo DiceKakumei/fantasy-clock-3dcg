@@ -59,7 +59,8 @@ jobs:
       - name: Glow
         run: |
           pip install pillow numpy
-          python scripts/glow.py output/raw.png output/scene${{ matrix.scene }}.png
+          python scripts/toon.py output/raw.png output/toon.png 7
+          python scripts/glow.py output/toon.png output/scene${{ matrix.scene }}.png
       - name: Upload to release
         env:
           GH_TOKEN: ${{ github.token }}
